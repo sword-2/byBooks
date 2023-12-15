@@ -1,0 +1,52 @@
+#!/bin/sh
+#shell script for simple Linux operations
+
+
+main() {
+	case $1 in
+		"fi") #find a file. Commented out a few past commands
+			#pth="$SWORD_PATH"
+			#find $pth -type f -name "swmgr.*" | less #src/mgr/swmgr.cpp
+			#grep -ir 'class SWMgr' $pth | less
+			#find ./* -type f -name "*.docc" | less #src/mgr/swmgr.cpp
+			find ./docs/* -name "*archive*" | less #src/mgr/swmgr.cpp
+		;;
+		"loop1") #loop over directories/folders
+			find ./* -maxdepth 0 -type d | while read d; do
+				#find ./* -maxdepth 0 -type d ! -name '01-Genesis' | while read d; do
+				cp1 "$d" #copy some file for each folder
+				#edit1 "$d" #do an edit for a selected file in each folder
+			done
+		;;
+		"s") #spell check
+			aspell -c --mode=sgml --dont-backup LICENSE.md
+			aspell -c --mode=sgml --dont-backup README.md
+		;;
+		*)
+			printf 'unexpected argument %s, printing options then exit' "$1"
+			exit 1
+		;;
+		esac
+	exit 0
+} #end main
+
+cp1() { #copy from one folder to other folders
+	if [ -f "$1"/.gitignore ]; then
+		#it alredy has a .gitignore
+		printf '\n- directory OK %s' "$1"
+	else
+		#no .gitignore. 
+		cp '01-Genesis/.gitignore' "$1"
+		printf '\nNO .gitignore for %s' "$1"
+	fi
+
+}
+
+edit1() { #receive directory.
+	theFile="$1"/.gitignore
+	rm "$theFile"
+	#printf '\nplanning to remove file %s' "$theFile"
+}
+
+main "$@"; exit
+
