@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<!-- Investigate a schema for processing an index for verse by verse ministries international -->
+
+	<!-- An error was observed for xlink attribute if the following import was removed -->
+
+	<xs:import namespace="http://www.w3.org/1999/xlink" schemaLocation="http://www.w3.org/1999/xlink.xsd"/>
+
+	<xs:element name="fileTitle" type="xs:string"/>
+
+	<!-- <xs:element name="media" xmlns:xlink="http://www.w3.org/1999/xlink"> -->
+	<xs:element xmlns:xlink="http://www.w3.org/1999/xlink" name="media">
+		<xs:complexType mixed="true">
+			<xs:sequence> <!-- sequence used to add attribute -->
+			<xs:element minOccurs="0" name="title" type="xs:string"/>
+			<xs:element minOccurs="0" name="taughtBy" type="xs:string"/>
+			<xs:element minOccurs="0" name="date" type="xs:date"/>
+			<xs:element minOccurs="0" name="format" type="xs:string"/> <!-- format of media -->
+			<xs:element minOccurs="0" name="size" type="xs:integer"/> <!-- filesize of media -->
+			<xs:element minOccurs="0" name="bkNo" type="xs:integer"/> <!-- book number -->
+			<xs:element minOccurs="0" name="lID" type="xs:string"/> <!-- library codes separated by pipe (|) - Lib Congress | Dewey Decimal -->
+			<xs:element minOccurs="0" name="subCode" type="xs:decimal"/> <!--chapter number or topic number -->
+		</xs:sequence>
+		<xs:attribute xmlns:xlink="http://www.w3.org/1999/xlink" ref="xlink:href"/>  <!-- the namespace was moved up to element media -->
+		</xs:complexType>
+	</xs:element>
+
+	<!-- This is the main element, which uses teh previous building blocks -->
+	<xs:element name="file">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element minOccurs="1" maxOccurs="1" ref="fileTitle"/>
+		<xs:element minOccurs="0" maxOccurs="unbounded" ref="media"/>
+	</xs:sequence>
+	</xs:complexType>
+</xs:element>
+
+</xs:schema>

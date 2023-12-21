@@ -1,8 +1,9 @@
 # Ignore everything in this directory
 */
 *
-#Except these file(s)
+#Except these file(s) / directories
 #!01-latest/
 !/01-latest*
 !/01-latest/*
 !.gitignore
+!vbvmi.xsd
