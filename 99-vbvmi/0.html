@@ -1,0 +1,336 @@
+<!DOCTYPE html> 
+	<!-- Investigating how to catalog media in XML format and read on a web page. Starting with Verse By Verse Ministries Int'l (VBVMI). -->
+
+<head> 
+	<title>Under construction - VBVMI</title>
+
+	<!-- CSS -->
+	<style> 
+		table { 
+			border-collapse: collapse; 
+			//width: 100%; //removed this so table can shrink. 
+		} 
+
+		th, 
+		td { 
+			text-align: left; 
+			padding: 8px;
+			width: auto;
+		} 
+
+		tr:nth-child(even) { 
+			background-color: #7ce2af 
+		} 
+
+		th { 
+			background-color: #7c0f65; 
+			color: white; 
+		} 
+
+
+		//give status paragraph a border
+		p.dotted {border-style: dotted;}
+
+		/* a button group was added to load different tables one at a time for debugging */
+		.btn-group button {
+			background-color: #04AA6D; /* Green background */
+			border: 1px solid green; /* green border */
+			color: white;
+			padding: 10px 24px;
+			cursor: pointer;
+			float: left;
+		}
+
+		.btn-group button:not(:last-child) {
+			border-right: none; /* prevent double borders */
+		}
+
+		/* clear floats (clearfix hack) */
+		.btn-group:after {
+			content: "";
+			clear: both;
+			display: table;
+		}
+
+		/* add a background color on hover */
+		.btn-group button:hover {
+			background-color: #3e8e41;
+		}
+	</style> 
+</head> 
+
+<body> 
+	<p>options to load file(s)</p>
+	<div class="btn-group">
+		<button onclick="setupTbl()">load vbmvi latest file</button>
+	</div>
+	<hr>
+	<p>options to sort the table: asc-ascending; desc-descending</p>
+	<div class="btn-group">
+		<button onclick="sortTable2(0, 'asc')">title asc</button>
+		<button onclick="sortTable2(0, 'desc')">title desc</button>
+
+		<button onclick="sortTable2(3, 'asc')">book No asc</button>
+		<button onclick="sortTable2(3, 'desc')">bookNo desc</button>
+
+		<button onclick="sortTable2(4, 'asc')">LC asc</button>
+		<button onclick="sortTable2(4, 'desc')">LC desc</button>
+
+		<button onclick="sortTable2(5, 'asc')">DD asc</button>
+		<button onclick="sortTable2(5, 'desc')">DD desc</button>
+	</div>
+
+	<br><br> 
+	<table id="vbvmiCatalog">
+
+		<caption>empty table</caption>
+	</table>
+	<p class="dotted" id="stat">A paragraph to debug javascript:</p>
+
+	<!--JavaScript-->
+	<script>
+		var stat=document.getElementById("stat"); //status element to print debugging info
+		var theTable=document.getElementById("vbvmiCatalog");
+		const title = new Map(); //title
+		const format = new Map(); //format: video, audio, book
+		const href = new Map(); //hyperlink
+		const bNo = new Map(); //book Number: 01 for Genesis, 02 for Exodus ... 66 for Revelation.
+		const lc = new Map(); //library class - library of congress (lc)
+		const dd = new Map(); //library class - dewey decimal (dd)
+		//variables for parsing xml:
+			//parser = new DOMParser();
+			var xmlDoc;
+			var x; //something to hold data which is ready to be parsed.
+
+	function setupTbl() {
+		tblSetup(); //table caption, header rows.
+		retrieveXml("https://raw.githubusercontent.com/sword-2/byBooks/master/99-vbvmi/01-latest/01.xml");
+		//x = xmlDoc.documentElement.childNodes; //worked, but had undefined's
+		stat.innerHTML += "<br>setupTbs(): abou tto call readXml() with x.length=" + x.length;
+	}
+	function retrieveXml(aUrl) {
+		try {
+			stat.innerHTML += "<br>retrieveXml() started";
+			var xmlhttp = new XMLHttpRequest(); 
+			xmlhttp.onreadystatechange = function () { 
+
+				// Request finished and response 
+				// is ready and Status is "OK" 
+				if (this.readyState == 4 && this.status == 200) { 
+					stat.innerHTML += "<br>retrieveXml 1, this.responseText =" + this.responseText;
+					parser = new DOMParser();
+					xmlDoc = parser.parseFromString(this.responseText, "text/xml");
+					x = xmlDoc.documentElement.childNodes; //worked, but had undefined's
+					//unsuccessful moving calls to readXml and writeXml to parent function
+						readXml();
+						writeXml();
+				} else {
+				stat.innerHTML += "<br>netCall(): transfer not complete, this.readyState=" + this.readyState +  ", and this.status=" + this.status;
+				}
+			};  
+				xmlhttp.open("GET", aUrl, true); 
+				xmlhttp.send(); 
+		} catch(e) {
+			//alert(e.message);
+			stat.innerHTML += "<br>netCall() error, e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack;
+		}
+	}
+
+	function readXml() {
+		//try-catch blocks added to handle times when a tag is not present.
+		//local variables - caution not to clash with global variables
+			var ti; //title
+			var fo; //format
+			var hr; //href
+			var bn; //book number
+			var totalTxt; //A combined value delimited by pipe (library code LC | library code DD).
+		try {
+		stat.innerHTML += "<br>readXml debugging: x.length=" + x.length + ";";
+
+		for (var i=0; i < x.length; i++) {
+			//stat.innerHTML += "<br>readXml() in loop. i=" + i
+			if (x[i].nodeName == "media") {
+				//childNodes were not further looped since some were undefined
+
+				try {
+					if (ti=x[i].getElementsByTagName('title')[0].textContent) title.set(i.toString(), ti);
+					else title.set(i.toString(), "-");
+				} catch (e) {
+					stat.innerHTML += "<br>readXml() error for title: e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+					title.set(i.toString(), "-");
+				}
+
+				try {
+					if (fo=x[i].getElementsByTagName('format')[0].textContent) format.set(i.toString(), fo);
+					else format.set(i.toString(), "-");
+				} catch (e) {
+					stat.innerHTML += "<br>readXml() error for format: e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+					format.set(i.toString(), "-");
+				}
+
+
+				try {
+					if (hr=x[i].getAttributeNS('http://www.w3.org/1999/xlink', 'href')) href.set(i.toString(), hr);
+					else href.set(i.toString(), "-");
+				} catch (e) {
+					stat.innerHTML += "<br>readXml() error for href: e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+					href.set(i.toString(), "-");
+				}
+
+				try {
+					if(bn=x[i].getElementsByTagName('bkNo')[0].textContent) bNo.set(i.toString(), bn);
+					else bNo.set(i.toString(), "-");
+				} catch (e) {
+					stat.innerHTML += "<br>readXml() error for bkNo: e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+					bNo.set(i.toString(), "-");
+				}
+
+
+				try {
+					if (totalTxt=x[i].getElementsByTagName('lID')[0].textContent > 0) {
+						//var totalTxt=x[i].getElementsByTagName('lID')[0].textContent;
+						const myArray=totalTxt.split("|"); //2 library codes on each side of pipe (|)
+						if (myArray.size == 2) { //expected 2 library codes
+							lc.set(i.toString(), myArray[0]);
+							dd.set(i.toString(), myArray[1]);
+						} else { //unexpected data value
+							lc.set(i.toString(), "error");
+							dd.set(i.toString(), "error");
+						}
+					} else {
+						lc.set(i.toString(), "-");
+						dd.set(i.toString(), "-");
+					}
+				} catch (e) {
+					stat.innerHTML += "<br>readXml() error for lID: e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+					lc.set(i.toString(), "-");
+					dd.set(i.toString(), "-");
+				}
+				} //end if
+			//if (i >= 10) break; //limit number of loop iterations when debugging
+		} //end for
+		//sort map
+		//var mapAsc = new Map([...mapLat.entries()].sort());
+		} catch(e) {
+			stat.innerHTML += "<br>readXml() error, e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+		}
+	} //end readXml()
+
+	function tblSetup() { //header row
+		try {
+		theTable.caption.innerHTML = "latest";
+
+		var thead = document.createElement("thead");
+		
+		var row1 = document.createElement("tr");
+		row1.appendChild(document.createElement("th")).appendChild(document.createTextNode("title"));
+		row1.appendChild(document.createElement("th")).appendChild(document.createTextNode("format"));
+		row1.appendChild(document.createElement("th")).appendChild(document.createTextNode("link"));
+		row1.appendChild(document.createElement("th")).appendChild(document.createTextNode("book"));
+		var col2=document.createElement("th");
+			var col2Val=document.createTextNode("library code");
+			col2.colSpan = "2";
+			col2.appendChild(col2Val);
+			row1.appendChild(col2);
+		//skip a <th> since previoius one has colspan=2 
+		row1.appendChild(document.createElement("th")).appendChild(document.createTextNode("index"));
+		thead.appendChild(row1);
+
+		var row2 = document.createElement("tr");
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("-"));
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("-"));
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("-"));
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("No"));
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("LC"));
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("DD"));
+		row2.appendChild(document.createElement("th")).appendChild(document.createTextNode("javascript"));
+		thead.appendChild(row2);
+
+		theTable.appendChild(thead);
+
+		tblBody=document.createElement("tbody");
+		theTable.appendChild(tblBody);
+		theTable.setAttribute("border", "1");
+		} catch(e) {
+			stat.innerHTML += "<br>tbsSetup() error, e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack + ", i=" + i;
+		}
+
+	} //end function tblSetup()
+
+	function writeXml() {
+		try {
+		//edit or add content to table
+		//local variables to generate DOM nodes, TextNodes, and anchors
+			var h1a; //used to create DOM subelement to get anchor tag(s).
+
+		var myTbody = theTable.getElementsByTagName('tbody')[0];
+
+		stat.innerHTML += "<br>latestWrite(), title.size=" + title.size;
+		for (const [key, value] of title.entries()) { //counter not good since undefineds occur in integer count
+			var newRow = myTbody.insertRow(-1);
+			//cells appended from left to right
+			newRow.insertCell().append(title.get(key));
+			newRow.insertCell().append(format.get(key));
+			h1a = document.createElement("a");
+			h1a.href = href.get(key);
+			h1a.innerHTML = "link";
+			newRow.insertCell().append(h1a);
+			newRow.insertCell().append(bNo.get(key));
+			newRow.insertCell().append(lc.get(key));
+			newRow.insertCell().append(dd.get(key));
+			newRow.insertCell().append(key);
+		} //end for
+		} catch(e) {
+			//alert(e.message);
+			stat.innerHTML += "<br>latestWrite() error, e.name=" + e.name + ", e.message=" + e.message + ", e.stack=" + e.stack;
+		}
+	} //end latestWrite()
+
+function sortTable2(n, dir) {
+	//n has column number of table
+	//dir either asc for ascending or desc for descending
+	var rows, switching, i, x, y, shouldSwitch, switchcount = 0;
+	switching = true;
+	//var debugOuterLoop = 0;
+	//var debugInnerLoop = 0;
+	/* loop until no more switching, like bubble sort  */
+	while (switching) {
+		//start by saying: no switching is done:
+		switching = false;
+		rows = theTable.getElementsByTagName("TR");
+		/*Loop through all table rows (except the first, which contains table headers):*/
+		for (i = 0; i < (rows.length - 1); i++) {
+			//start by saying there should be no switching:
+			shouldSwitch = false;
+			/*Get the two elements you want to compare, current row and the next:*/
+			x = rows[i].getElementsByTagName("TD")[n];
+			y = rows[i + 1].getElementsByTagName("TD")[n];
+			/*check if the two rows should switch place, based on the direction, asc or desc:*/
+			if (dir == "asc") {
+				if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+					//if so, mark as a switch and break the loop:
+					shouldSwitch= true;
+				}
+			} else if (dir == "desc") {
+				if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+					//if so, mark as a switch and break the loop:
+					shouldSwitch= true;
+				}
+			} else {
+				stat.innerHTML += "<br>error in sortTable2(): dir != asc != desc";
+			}
+			if (shouldSwitch) {
+				/*make the switch and mark it was done:*/
+				switching = true; //outer loop has to repeat at end like the bubble sort.
+				rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+				switchcount ++;      
+				//stat.innerHTML += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;innerLoop: switchcount=" + switchcount + ",rows.length=" + rows.length + ", debugOuterLoop=" + debugOuterLoop;
+			}
+		} //innerloop
+		//debugOuterLoop++;
+	} //outerloop
+	//stat.innerHTML += "<br>outerLoop: switchcount=" + switchcount + ",rows.length=" + rows.length + ", debugOuterLoop=" + debugOuterLoop + ", switching=" + switching;
+} //end function sortTable2()
+	</script> 
+</body> 
+</html>

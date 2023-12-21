@@ -1,0 +1,82 @@
+#!/bin/sh
+
+#Variables to help source subroutines and edit the file
+	choice=''
+	done=1 #0 means true in shell
+
+		pth=/usr/local/bible/data-bible/byBooks/99-vbvmi
+
+		#names of some sub-folders - hardcoded for where club files are stored.
+		f1='01-latest'
+		#f2='tbd'
+		fls=$(find $f1/*.xml -maxdepth 0 -type f)
+		#fls=$(find $f1/* $f2/* $f3/*  $f4/* $f5/* $f6/* $f7/* -maxdepth 0 -type f) 
+		#fls=$(find ${pth}/${f1}/* ${pth}/${f2}/* ${pth}/${f3}/*  ${pth}/${f4}/* ${pth}/${f5}/* ${pth}/${f6}/* ${pth}/${f7}/* -maxdepth 0 -type f) 
+
+
+vbvmi() {
+  #partial check for expected user input
+	if [ $# -lt 1 ]; then #check by number of positional arguments
+		#printf '\nless than 1 args received. Expected at least one:'
+		options | less #like a help when implemented
+		read choice
+	else choice="$1"
+	fi
+	details "$choice"
+} #end function
+
+
+details() {
+
+case "$1" in
+	"s") #run spell checker across a bunch of files
+		#printf '\nrunning option s for spell check'
+		set -- "$fls"
+		#printf '\ndid set --, now $@=%s' "$@"
+		for f in "$@"; do
+			#gspell s "$f"
+			#printf '\nrunning spell check on %s' "$f"
+			aspell -c --mode=sgml --dont-backup "$f"
+		done
+
+	;;
+	"x1") #run xmllint to validate file
+		set -- "$fls"
+		for f in "$@"; do
+			printf '\nvalidating file=%s' "$f"
+			xmllint --debug --debugent --noout --schema vbvmi.xsd "${f}" # >> rpt.txt 2>&1
+		done
+	;;
+	"x2") #run xmllint to extract a tag
+		set -- "$fls"
+		#XMLLINT_INDENT=" "
+		for f in "$@"; do
+			#xmllint --xpath '//file/media/format/text()' "${f}" # >> rpt.txt 2>&1
+			#xmllint --xpath '//file/media/title/text()' "${f}" # >> rpt.txt 2>&1
+			oPut=$(xmllint --xpath '//file/media/format/text() | //file/media/title/text()' "${f}") # >> rpt.txt 2>&1
+			#each value of a different line so use awk to put them on same line
+			printf '%s' "$oPut" | awk '{getline b;printf("%s %s\n",$0,b)}' #combines every other line
+		done
+	;;
+	"o1") #open a library file to check some library codes to see if any are usable.
+		file1='01-toc'
+		file2='BR-Christianity'
+		file3='BS-TheBible'
+		file4='BT-DoctrinalTheology'
+		file5='BV-PracticalTheology'
+		file6='BX-ChristianDenominations'
+		vim /usr/local/Caesar/lc/classB/"$file3"
+	;;
+	*)
+		echo 'unexpected argument in first position: '$1', exiting'
+		exit 1
+	;;
+esac
+exit 0
+} #end details
+
+options() {
+	printf '\noptions not yet printed out since the script to immature.'
+}
+
+vbvmi "$@"; exit 0
