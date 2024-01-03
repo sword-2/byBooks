@@ -1,6 +1,6 @@
 #!/bin/sh
+#Personal code without explanations.
 
-#Variables to help source subroutines and edit the file
 	choice=''
 	done=1 #0 means true in shell
 
@@ -29,7 +29,10 @@ vbvmi() {
 details() {
 
 case "$1" in
-	"s") #run spell checker across a bunch of files
+	"s1") #spell check 1 file
+			aspell -c --mode=sgml --dont-backup ../README.md
+		;;
+	"s2") #run spell checker across a bunch of files
 		#printf '\nrunning option s for spell check'
 		set -- "$fls"
 		#printf '\ndid set --, now $@=%s' "$@"
@@ -67,6 +70,14 @@ case "$1" in
 		file6='BX-ChristianDenominations'
 		vim /usr/local/Caesar/lc/classB/"$file3"
 	;;
+	"a1") #this likely to be deactivated. was to use awk to edit some lines of text
+		#awk '/<title>/ {flag=1; next} /<\/title>/{flag=0} flag; END{print "\n"}' '01-latest/01.xml'
+		awk '{ \
+			if ( $0 ~ /.*<title>/ ) { totalTxt = ""; print "found <title> on line"; } \
+			else if ( $0 ~ /<[/]title>/ ) { totalTxt = "1"; print "found </title> on line"; } \
+			else { print "no finds"; } \
+		}' '01-latest/01.xml'
+		;;
 	*)
 		echo 'unexpected argument in first position: '$1', exiting'
 		exit 1
